@@ -31,8 +31,9 @@ COPY cfg /app/cfg
 COPY client /app/client
 
 # Display directory contents for debugging (you can remove these in production)
-RUN ls /app/bin
-RUN ls /app/cfg
+RUN ls -l /app/bin
+RUN ls -l /app/cfg
+RUN ls -l /app/client
 
 # Set working directory for the entry point
 WORKDIR /app/bin
