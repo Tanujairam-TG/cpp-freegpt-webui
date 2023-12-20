@@ -30,8 +30,8 @@ WORKDIR /app
 COPY cfg /app/cfg
 COPY client /app/client
 
-# Display directory contents for debugging (you can remove these in production)
-# RUN ls -l /app/bin
+# Display directory contents for debugging (you can remove these in production) 
+RUN ls -l /app/bin
 RUN ls -l /app/cfg
 RUN ls -l /app/client
 
