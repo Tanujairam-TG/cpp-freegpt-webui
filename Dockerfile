@@ -26,12 +26,12 @@ RUN wget https://github.com/lwthiker/curl-impersonate/releases/download/${LIB_VE
 WORKDIR /app
 
 # Copy necessary files
-COPY bin /app/bin
+# COPY bin /app/bin
 COPY cfg /app/cfg
 COPY client /app/client
 
 # Display directory contents for debugging (you can remove these in production)
-RUN ls -l /app/bin
+# RUN ls -l /app/bin
 RUN ls -l /app/cfg
 RUN ls -l /app/client
 
