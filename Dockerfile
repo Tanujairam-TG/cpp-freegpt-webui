@@ -1,42 +1,46 @@
-FROM ubuntu:23.04
+# Use a more specific base image with LTS support
+FROM ubuntu:20.04
 
-# Use --build-arg LIB_DIR=/usr/lib for arm64 CPUs
-ARG LIB_DIR=/local/lib
+# Set a non-root user for better security
+ARG USER=myuser
+ARG UID=1000
+ARG GID=1000
 
-# Create necessary directories
-RUN mkdir -p $LIB_DIR
+# Create a non-root user
+RUN groupadd -g $GID -r $USER && useradd -u $UID --create-home -r -g $USER $USER
 
-# Set environment variables
-ENV LD_LIBRARY_PATH=$LIB_DIR:$LD_LIBRARY_PATH
-ENV LIBRARY_PATH=$LIB_DIR:$LIBRARY_PATH
-
-# Install required dependencies
-RUN apt-get update -y && \
-    apt-get install -y libcurl4-openssl-dev wget libnss3 nss-plugin-pem ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-# Download and extract libcurl-impersonate
-ARG LIB_VERSION=v0.6.0-alpha.1
-ARG ARCH=$(dpkg --print-architecture)
-RUN wget https://github.com/lwthiker/curl-impersonate/releases/download/${LIB_VERSION}/libcurl-impersonate-${LIB_VERSION}.${ARCH}-linux-gnu.tar.gz -O $LIB_DIR/libcurl-impersonate-${LIB_VERSION}.${ARCH}-linux-gnu.tar.gz && \
-    tar -xvf $LIB_DIR/libcurl-impersonate-${LIB_VERSION}.${ARCH}-linux-gnu.tar.gz -C $LIB_DIR --strip-components=1 && \
-    rm $LIB_DIR/libcurl-impersonate-${LIB_VERSION}.${ARCH}-linux-gnu.tar.gz
-
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy necessary files
-# COPY bin /app/bin
-COPY cfg /app/cfg
-COPY client /app/client
+# Create directories and set permissions
+RUN mkdir -p /local/lib && chown -R $USER:$USER /local
 
-# Display directory contents for debugging (you can remove these in production) 
-RUN ls -l /app/bin
-RUN ls -l /app/cfg
-RUN ls -l /app/client
+# Switch to non-root user
+USER $USER
 
-# Set working directory for the entry point
+# Set environment variables
+ENV LD_LIBRARY_PATH=/local/lib:$LD_LIBRARY_PATH
+ENV LIBRARY_PATH=/local/lib:$LIBRARY_PATH
+
+# Update package list and install necessary packages
+RUN sudo apt-get update -y && sudo apt-get install -y libcurl4-openssl-dev wget libnss3 nss-plugin-pem ca-certificates
+
+# Download and extract libcurl-impersonate
+ARG ARCH=amd64
+RUN wget https://github.com/lwthiker/curl-impersonate/releases/download/v0.6.0-alpha.1/libcurl-impersonate-v0.6.0-alpha.1.$ARCH-linux-gnu.tar.gz -P /local/lib \
+    && tar -xvf /local/lib/libcurl-impersonate-v0.6.0-alpha.1.$ARCH-linux-gnu.tar.gz -C /local/lib \
+    && rm /local/lib/libcurl-impersonate-v0.6.0-alpha.1.$ARCH-linux-gnu.tar.gz
+
+# Copy application files
+COPY --chown=$USER:$USER bin /app/bin
+COPY --chown=$USER:$USER cfg /app/cfg
+COPY --chown=$USER:$USER client /app/client
+
+# Display directory contents for debugging
+RUN ls /app/bin && ls /app/cfg
+
+# Set the working directory to /app/bin
 WORKDIR /app/bin
 
-# Define entry point command
+# Define the entry point
 ENTRYPOINT ["sh", "-c", "./cpp-freegpt-webui ../cfg/cpp-free-gpt.yml"]
